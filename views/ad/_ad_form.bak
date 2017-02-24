@@ -1,0 +1,460 @@
+
+<div id="no_drop_area">
+<div id="template_content">
+<div id="main">
+
+	<section class="lfloat"  style="width: 100%;" >
+		<nav  style="width: 100%;">
+			<ul>
+				<li class="active">
+					<div>
+						<div class="circle lfloat">
+							<span>1</span>
+						</div>
+						<div class="stepTitle lfloat">
+							<?php if ($model->isNewRecord)
+                                echo 'Create';
+                            else
+                                echo 'Edit';
+                            ?>
+						</div>
+					</div>
+				</li>
+				<li>
+					<div>
+						<div>
+							<div class="circle lfloat">
+								<span>2</span>
+							</div>
+							<div class="stepTitle lfloat">
+								Verify
+							</div>
+						</div>
+					</div>
+				</li>
+
+
+			</ul>
+		</nav>
+		<article style="" id="aiInsert">
+			<div id="newform"></div>
+			<!--<form class="clearfix" autocomplete="off" novalidate="novalidate" id="aiform">-->
+
+            <?php $form=$this->beginWidget('CActiveForm', array(
+                'id'=>'aiform',
+                'enableClientValidation'=>false,
+                'method'=>'POST',
+                'action'=>Yii::app()->createUrl("ad/new"),
+                'clientOptions'=>array(
+                    'validateOnSubmit'=>false,
+                    ),
+                'htmlOptions'=>array(
+                    'class'=>'clearfix dropzone',
+                    'enctype'=>'multipart/form-data',
+                ),
+                )); ?>
+
+
+			<div class="container step_0">
+
+                <div class="rowNode optim-city">
+                    <label class="lfloat">City<br></label>
+                    <div class="boxInput lfloat">
+                        <?php echo $form->dropDownList($model, 'cityID',  CHtml::listData(City::model()->findAll(), 'orderID', 'name_cn'), array('prompt'=>'All cities')); ?>
+                        <div id="error_field_cityID" class="error">
+                            <?php echo $form->error($model,'cityID'); ?>
+                        </div>
+                     </div>
+                 </div>
+                <div class="rowNode optim-category">
+                    <label class="lfloat">Category<br></label>
+                    <div class="boxInput lfloat">
+                        <select id="categorySelect" name="Ad[categoryID]" required="true" aria-required="true">
+                            <option value="" selected="selected">All categories</option>
+                            <?php
+                            foreach ($main_categories as $main_category):
+                                if (($mainCategoryActive == $main_category->orderID) && ($model->categoryID==0)) { ?>
+                                    <option selected="selected"  value="m<?php echo $main_category->orderID; ?>">- <?php echo $main_category->name_cn; ?> -</option>
+                                <?php } else { ?>
+                                    <option value="100<?php echo $main_category->orderID; ?>">- <?php echo $main_category->name_cn; ?> -</option>
+                                <?php  } ?>
+                                <?php foreach ($main_category->categoriesOrder as $category){
+                                if ($model->categoryID==$category->orderID) { ?>
+                                    <option selected="selected" value="<?php echo $category->orderID; ?>"><?php echo $category->name_cn; ?></option>
+                                <?php
+
+                                }
+                                else
+                                { ?>
+                                    <option value="<?php echo $category->orderID; ?>"><?php echo $category->name_cn; ?></option>
+                                <?php } ?>
+                            <?php } ?>
+                            <?php endforeach; ?>
+                        </select>
+                        <div id="error_field_categoryID" class="error">
+                            <?php echo $form->error($model,'categoryID'); ?>
+                        </div>
+                    </div>
+                    <div id="tip_category" class="tooltip">
+
+                        </div>
+                </div>
+                <?php if (!$model->isNewRecord) $this->editAdGetSubtypes($model);  ?>
+                <div   id="fields">
+                    <?php  if (!$model->isNewRecord) $this->editAdGetFields($model);     ?>
+                </div>
+
+              <!--  <div class="rowNode optim-image" id="imguploadrow">
+                    <label class="lfloat">Photo<br>
+                        <span style="font-weight:normal;"></span>
+                    </label>
+                    <div class="boxInput lfloat">
+                        <div><input type="file" onchange="handleFiles(this.files)" style="visibility: hidden;position: absolute;" accept="image/*" multiple="" id="fileElem" name="fileElem">
+                            <div id="upload_widget">
+                                <div style="height:auto" class="init upload_container" id="fileList">
+                                    <div id="start-content">
+                                        <div id="camera"></div>
+
+                                    </div>
+                                    <div id="body-content">
+
+                                    </div>
+
+                                    <div style="clear: both; height: 10px;">
+
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="preview"></div>
+                            <div id="error-messages">
+                                <div class="format" id="message">Format photo image: jpg, png.</div>
+                                <div class="max-n" id="message">You could upload maximum
+                                    <span id="image-number">5</span> photos.
+                                </div>
+                                <div class="dimension" id="message">Dimension of photos would be
+                                    <span id="filename"></span>
+                                    250x100 pixel
+                                </div>
+
+                                <div class="container dropzone-previews dropzone dz-clickable" id="myDrop">
+                                    <div class="dz-default dz-message" data-dz-message="">
+                                        <span>Drop files here to upload</span>
+                                    </div>
+                                </div>
+                                <div class="dropzone-previews"></div>
+
+
+                            </div>
+                        </div>
+                        <div id="error_field_image" class="error">
+
+                        </div>
+                    </div>
+                    <div id="tip_image" class="tooltip">
+
+                    </div>
+                </div>-->
+
+
+                <div class="rowNode optim-subject">
+                    <label class="lfloat">Name<br></label>
+                    <div class="boxInput lfloat">
+                        <?php echo $form->textField($model,'name', array('maxlength'=>'50')); ?>
+                        <div id="error_field_name" class="error">
+                            <?php echo $form->error($model,'name'); ?>
+                        </div>
+                    </div>
+                </div>
+                <div class="rowNode optim-body">
+                    <label class="lfloat">Description<br></label>
+                    <div class="boxInput lfloat">
+                        <?php echo $form->textArea($model,'text', array('maxlength'=>'2000')); ?>
+                        <div id="error_field_text" class="error">
+                            <?php echo $form->error($model,'text'); ?>
+                        </div>
+                    </div>
+                </div>
+                <div class="rowNode optim-price">
+                    <label class="lfloat">Price<br></label>
+                    <div class="boxInput lfloat">
+                        <?php echo $form->textField($model,'price', array('maxlength'=>'10')); ?>
+                        <div id="error_field_price" class="error">
+                            <?php echo $form->error($model,'price'); ?>
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+            <div class="container step_1">
+                <div class="rowNode optim-company_ad">
+                    <label class="lfloat">Property<br></label>
+                    <div class="boxInput lfloat">
+                        <div style="font-weight: normal">
+                            <?php echo $form->radioButtonList($model,'property',
+                                array('1'=>'Private','2'=>'Company'),
+                                array(
+                                    'labelOptions'=>array('style'=>'display:inline'),
+                                    'separator'=>'',
+                                    'template'=>'{input}{label}',
+                                ));
+                            ?>
+                        </div>
+                    </div>
+                </div>
+                <div class="rowNode optim-name">
+                    <label class="lfloat">Owner name<br></label>
+                    <div class="boxInput lfloat">
+                        <!--<input type="text" name="name" required="true" maxlength="50" aria-required="true">-->
+                        <?php echo $form->textField($model,'ownerName', array('maxlength'=>'50')); ?>
+                        <div id="error_field_ownerName" class="error">
+                            <?php echo $form->error($model,'ownerName'); ?>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="rowNode optim-email">
+                    <label class="lfloat">E-mail<br></label>
+                    <div class="boxInput lfloat">
+                        <?php echo $form->textField($model,'email', array('maxlength'=>'60')); ?>
+                        <div id="error_field_email" class="error">
+                            <?php echo $form->error($model,'email'); ?>
+                        </div>
+                    </div>
+                </div>
+                <div class="rowNode optim-phone">
+                    <label class="lfloat">Phone<br></label>
+                    <div class="boxInput lfloat">
+                        <?php echo $form->textField($model,'phone', array('maxlength'=>'50')); ?>
+                        <div id="error_field_phone" class="error">
+                            <?php echo $form->error($model,'phone'); ?>
+                        </div>
+                    </div>
+                </div>
+                <div class="rowNode optim-phone_hidden">
+                    <label class="lfloat"></label>
+                    <div class="boxInput lfloat">
+                        <div>
+                            <?php echo $form->checkBox($model,'hidePhone'); ?>
+                            <span>Show number</span>
+                        </div>
+                        <div id="error_field_phone_hidden" class="error">
+
+                        </div>
+                    </div>
+                    <div id="tip_phone_hidden" class="tooltip">
+
+                    </div>
+                </div>
+            </div>
+            <?php  echo $form->textField($model,'urlID', array('maxlength'=>'50','id'=>'urlIdIndex','style'=>'display: none;')); ?>
+            <?php echo CHtml::submitButton($model->isNewRecord ? 'Create' : 'Save',array('style'=>'display: none;','id'=>'sFButton'));   ?>
+            <?php $this->endWidget(); ?>
+
+
+			<div class="section_footer clearfix">
+				<div id="btnAiSubmit" class="btnGreen">Continue</div>
+			</div>
+		</article>
+	</section>
+</div>
+
+<?php
+$this->beginWidget('zii.widgets.jui.CJuiDialog', array(
+'id' => 'mydialog',
+'options' => array(
+'title' => 'Upload file error',
+'autoOpen' => false,
+'modal' => true,
+'resizable'=> false
+),
+)); ?>
+<div id="msgModal" style="padding: 20px"></div>
+<?php
+$this->endWidget('zii.widgets.jui.CJuiDialog');
+
+
+$dropZoneUrl = Yii::app()->createUrl("ad/photoUpload");
+$removeFileUrl = Yii::app()->createUrl("ad/photoremove",array("urlID"=>$model->urlID));
+$showImagesOnServerUrl = Yii::app()->createUrl("ad/showadimages",array("urlID"=>$model->urlID));
+$countImagesUrl = Yii::app()->createUrl("ad/countadimages",array("id"=>$ad->id));
+$publishAdAfterPhotoUrl = Yii::app()->createUrl("ad/publishadafterphoto",array("id"=>$ad->id));
+$baseUrl = Yii::app()->baseUrl;
+$cs = Yii::app()->getClientScript();
+$cs->registerScriptFile($baseUrl.'/js/dropzone/js/dropzone.min.js');
+$cs->registerCssFile($baseUrl.'/js/dropzone//css/dropzone.css');
+Yii::app()->clientScript->registerScript('dropzonescript',"
+  var drop = new Dropzone('#aiform',{
+  url: '".$dropZoneUrl."',
+  autoProcessQueue: false,
+  addRemoveLinks : true,
+  uploadMultiple: false,
+  parallelUploads: 100,
+  maxFiles: 100,
+  autoDiscover: false,
+  init: function(){
+       thisDropzone = this;
+        $.ajax({
+           type: 'GET',
+           url: '".$showImagesOnServerUrl."',
+           success: function(msg){
+           console.log(msg);
+                var jsonResponse = $.parseJSON(msg);
+                var firstSequence, secondSequence, thirdSequence;
+                $.each(jsonResponse[0].imgArray , function(key, value) {
+                firstSequence=value.substr(0,3);
+                secondSequence=value.substr(3,3);
+                thirdSequence=value.substr(6,3);
+                var mockFile = {};
+                var sIUrl = '".Yii::app()->getBaseUrl(true)."/images/dzthumbs/'+firstSequence+'/'+secondSequence+'/'+thirdSequence+'/'+value;
+                thisDropzone.options.addedfile.call(thisDropzone, mockFile);
+                thisDropzone.options.thumbnail.call(thisDropzone, mockFile, sIUrl);
+                var imgPreviewTemplate = jQuery(mockFile.previewTemplate);
+                $( '<div style=\'display: none\' class=\'photo_id\'>'+key+'</div>').appendTo(imgPreviewTemplate);
+            });
+
+           }
+        });
+      }
+  });
+
+  drop.on('success', function(file, response) {
+       var jsonResponse = $.parseJSON(response);
+       $.each(jsonResponse, function(key,value){
+                if (key == 'erroris')
+                    if (value == true)
+                    {
+                       file.previewElement.classList.add('dz-error');
+                       $('#msgModal').empty().append(jsonResponse.etype);
+                       $('#mydialog').dialog('open');
+                    }
+                    else
+                        {
+                            var valUrlIdIndex = $('#urlIdIndex').val();
+                            window.location.href = '".Yii::app()->createUrl("ad/verify")."/'+valUrlIdIndex;
+                        }
+
+       });
+
+
+      // window.location.href = '".Yii::app()->createUrl("ad/verify")."';
+  });
+
+
+",CClientScript::POS_READY);
+
+
+
+if (!$model->isNewRecord) {
+Yii::app()->clientScript->registerScript('removephotoscript',"
+drop.on('removedfile', function(file) {
+    var imgPreviewTemplate = jQuery(file.previewTemplate);
+    var  id = imgPreviewTemplate.find('div.photo_id').html();
+    $.ajax({
+        type: 'GET',
+        url: '".$removeFileUrl."',
+        data: 'id_img='+id,
+        success: function(msg){
+        }
+    });
+});
+",CClientScript::POS_READY);
+
+    $vUrl = Yii::app()->createurl('ad/validateEdit');
+}
+else
+    $vUrl = Yii::app()->createurl('ad/validate');
+
+
+
+Yii::app()->clientScript->registerScript('newadscript',"
+
+       $('#btnAiSubmit').on('click',function(){
+            validate();
+            return false;
+       })
+
+        function validate(){
+        var url = '".$vUrl."';
+            $.ajax({
+                url: url,
+                method: 'POST',
+                data: $('#aiform').serialize(),
+                success: function(response)
+                {
+                    $('.error').empty().hide();
+                    var json = $.parseJSON(response);
+                        $.each(json, function(key,value){
+                            $('.error').each(function(){
+                                var field_err_id = $(this).attr('id');
+                                if (field_err_id == 'error_field_'+key) {
+                                    $('#'+field_err_id+'.error').show().append(value);
+                                }
+                            });
+                             if (key == 'urlID')  {
+                                            $('#urlIdIndex').val(value);
+                                            var dfLength = $('.photo_id').length;
+                                            var pfLength = $('.dz-preview:not(.dz-error)').length;
+                                            if (pfLength>dfLength)
+                                                    drop.processQueue();
+                                            else if(pfLength == dfLength)
+                                                window.location.href = '".Yii::app()->createUrl("ad/verify")."/'+value;
+                                        }
+                     });
+                }
+            });
+        }
+
+
+        $('#categorySelect').on('change', function() {
+          var interestTypeUrl = '".Yii::app()->createurl('site/newAdGetSubtypeField')."';
+          var catId =  this.value;
+          var firstInputId, abbrValue, idValue;
+          $.ajax({
+                url: interestTypeUrl,
+                method: 'GET',
+                data: 'catId='+catId,
+                success: function(response)
+                {
+                    $('.optim-type').remove();
+                    $('.optim-category').after(response);
+                    var typeInterestInputId;
+                    $('.container .optim-type input').each(function(k,el){
+                        if ( $(el).is(':checked') ) typeInterestInputId = $(el).val();
+                    });
+                    getFields(catId, typeInterestInputId);
+                }
+            });
+        });
+
+
+
+
+      $('.container').delegate('.optim-type input', 'click', function(){
+        var typeInterestInputId, categoryId;
+        categoryId = $('#categorySelect option:selected').val();
+        $('.container .optim-type input').each(function(k,el){
+            if ( $(el).is(':checked') ) typeInterestInputId = $(el).val();
+        });
+        getFields(categoryId, typeInterestInputId);
+     });
+
+     function getFields(catId, firstInputId){
+        var getAdditionalFieldsUrl = '".Yii::app()->createurl('site/newAdGetFields')."';
+        $.ajax({
+                url: getAdditionalFieldsUrl,
+                method: 'GET',
+                data: 'catId='+catId+'&subtypeId='+firstInputId,
+                success: function(response)
+                {
+                      $('#fields').empty().append(response);
+                }
+        });
+     }
+
+
+
+   ",CClientScript::POS_READY);
+
+
+

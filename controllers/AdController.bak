@@ -1,0 +1,431 @@
+<?php
+
+class AdController extends Controller
+{
+
+    public function filters()
+	{
+		return array(
+			'accessControl', // perform access control for CRUD operations
+			'postOnly + delete', // we only allow deletion via POST request
+		);
+	}
+
+	/**
+	 * Specifies the access control rules.
+	 * This method is used by the 'accessControl' filter.
+	 * @return array access control rules
+	 */
+	public function accessRules()
+	{
+		return array(
+            array('allow', // allow admin user to perform 'admin' and 'delete' actions
+                'actions'=>array('getCarModel','view','shop'),
+                'users'=>array('*'),
+            ),
+			array('allow', // allow admin user to perform 'admin' and 'delete' actions
+				'actions'=>array('favorite','user','delete','validateEdit','photoremove','showadimages','verify','edit','new','validate','getCarModel','getcategoryinteresttypes','photoUpload'),
+				'users'=>array('@'),
+			),
+			array('deny',  // deny all users
+				'users'=>array('*'),
+			),
+		);
+	}
+
+    public function actionView($id){
+        $ad = Ad::model()->find('urlID=:urlID',array(':urlID'=>$id));
+        $this->render('view', array('ad'=>$ad));
+    }
+
+	public function actionNew()
+	{
+        $main_categories=Main_categories::model()->with('categoriesOrder')->findAll(array('order'=>'t.orderID ASC'));
+        $user=User::model()->findByPk(Yii::app()->user->id);
+        $model = new Ad;
+        if(isset($_POST['Ad']))
+        {
+            // populate input data to $a and $b
+            $model->attributes=$_POST['Ad'];
+            $model->published=1;
+            if($model->validate())
+            {
+                // use false parameter to disable validation
+                if ($model->save())
+                {
+
+                }
+            }
+        }
+        $model->phone = $user->phone;
+        $model->email = $user->email;
+        $model->property = 1;
+		$this->render('_ad_form',
+            array('main_categories'=>$main_categories,
+                  'model'=>$model,
+                  'edit'=>false,
+                  'user'=>$user,
+            )
+        );
+	}
+
+    public function actionVerify($id)
+    {
+        $criteria = new CDbCriteria;
+        $criteria->select = 't.*, cat.name_cn AS categoryName, city.name_cn AS cityName, user.fio AS userFio, user.email AS userEmail';
+        $criteria->join = 'LEFT JOIN 534q_categories cat ON cat.orderID = t.categoryID ';
+        $criteria->join .= 'LEFT JOIN 534q_city city ON city.orderID = t.cityID ';
+        $criteria->join .= 'LEFT JOIN 534q_user user ON t.userID = user.id ';
+        $criteria->order= 't.id DESC';
+        $criteria->condition = 't.urlID=:urlID';
+        $criteria->params = array(':urlID'=>$id);
+        $criteria->with = array('images');
+        $ad = Ad::model()->find($criteria);
+
+        if(isset($_POST['Ad']))
+        {
+            $ad->published=$_POST['Ad']['published'];
+            if($ad->update())
+                $this->redirect(array('ad/user',array('id'=>Yii::app()->user->getUrlId())));
+        }
+
+
+        $main_categories=Main_categories::model()->with('categoriesOrder')->findAll(array('order'=>'t.orderID ASC'));
+        $this->render('verify',
+            array('main_categories'=>$main_categories,
+                  'ad'=>$ad,
+            )
+        );
+    }
+
+    public function actionDelete()
+    {
+        $ad = Ad::model()->find('urlID=:urlID',array(':urlID'=>$_POST['id']));
+        $oldAd = $ad;
+        if ($ad->delete()) {
+            $this->photoremove($oldAd);
+            echo $ad->id;
+        }
+    }
+
+
+
+    public function actionEdit($id)
+    {
+        $criteria = new CDbCriteria;
+        $criteria->select = 't.*, cat.name_cn AS categoryName, city.name_cn AS cityName, user.fio AS userFio, user.email AS userEmail';
+        $criteria->join = 'LEFT JOIN 534q_categories cat ON cat.orderID = t.categoryID ';
+        $criteria->join .= 'LEFT JOIN 534q_city city ON city.orderID = t.cityID ';
+        $criteria->join .= 'LEFT JOIN 534q_user user ON t.userID = user.id';
+        $criteria->order= 't.id DESC';
+        $criteria->condition = 't.urlID=:urlID';
+        $criteria->params = array(':urlID'=>$id);
+        $model = Ad::model()->find($criteria);
+        $main_categories=Main_categories::model()->with('categoriesOrder')->findAll(array('order'=>'t.orderID ASC'));
+        $this->render('_ad_form',
+            array('model'=>$model,
+                  'main_categories'=>$main_categories,
+                   'edit'=>true)
+        );
+    }
+
+    public function actionValidate(){
+        $model = new Ad;
+        if(isset($_POST['Ad']))
+        {
+            $model->attributes=$_POST['Ad'];
+            $model->date_time = date('Y-m-d  H:i:s');
+            $model->moderation = 0;
+            $model->userID = Yii::app()->user->id;
+            $model->publish = 0;
+            if($model->validate())
+            {
+                // use false parameter to disable validation
+                if ($model->save())
+                {
+                    echo json_encode(array('urlID'=>$model->urlID));
+                }
+            }
+            else
+                echo CJSON::encode($model->getErrors());
+        }
+    }
+
+    public function actionValidateEdit(){
+        if(isset($_POST['Ad']))
+        {
+            $model = Ad::model()->find('urlID=:urlID',array(':urlID'=>$_POST['Ad']['urlID']));;
+            $model->attributes=$_POST['Ad'];
+            if($model->validate())
+            {
+                // use false parameter to disable validation
+                if ($model->update())
+                {
+                    echo json_encode(array('urlID'=>$model->urlID));
+                }
+            }
+            else
+                echo CJSON::encode($model->getErrors());
+        }
+    }
+
+   /* public function actionPhotoUpload()
+    {
+       // $resultsStack = array();
+        if ($_FILES['file']) {
+            $file_ary = $this->reArrayFiles($_FILES['file']);
+            foreach ($file_ary as $file) {
+                /$this->upload($file['name'], $file['type'], $file['size'], $file['tmp_name'], $_POST['Ad']['urlID']);
+              //  array_push($resultsStack, $res);
+            }
+           // echo json_encode($resultsStack);
+        }
+    }*/
+
+
+    public function actionPhotoUpload()
+    {
+        $fName = $_FILES['file']['name'];
+        $fType = $_FILES['file']['type'];
+        $fSize = $_FILES['file']['size'];
+        $tmp_name = $_FILES['file']['tmp_name'];
+        $adUrlID = $_POST['Ad']['urlID'];
+
+        $model = new AdImage();
+        $erroris = false;
+        $etype = '0';
+        $imageID = '';
+        $imgArray[] = array();
+        if (!empty($_FILES)) {
+            $name = $fName;
+            $tempFile = $tmp_name;
+            $model->adID = Ad::model()->find('urlID=:urlID',array(':urlID'=>$adUrlID))->id;
+            $extension = substr($name, strrpos($name, '.')+1);
+            $model->image = AdImage::generateImageName($extension);
+
+            $firstSequence = substr($model->image, 0,3);
+            $secondSequence = substr($model->image, 3,3);
+            $thirdSequence = substr($model->image, 6,3);
+            $uploaddir = Yii::getPathOfAlias('webroot').'/images/f/'.$firstSequence.'/'.$secondSequence.'/'.$thirdSequence.'/';
+            $thumbDir = Yii::getPathOfAlias('webroot').'/images/bigthumbs/'.$firstSequence.'/'.$secondSequence.'/'.$thirdSequence.'/';
+            $dzthumbDir = Yii::getPathOfAlias('webroot').'/images/dzthumbs/'.$firstSequence.'/'.$secondSequence.'/'.$thirdSequence.'/';
+
+            $size = $fSize;
+            if (AdImage::model()->count('adID=:adID', array(':adID' => $model->adID)) < 5)
+            {
+                if (($size < 3145728) && ($size>0))
+                {
+                    if ((($extension == "png")
+                            || ($extension == "jpeg")
+                            || ($extension == "jpg") || ($extension == "JPG")) &&
+                        (($fType == "image/jpeg") || ($fType == "image/png")))
+                    {
+                        if (is_uploaded_file($tempFile)) {
+                            $uploadfile = $uploaddir . $model->image;
+                            if($model->save())
+                            {
+                                if(!is_dir($uploaddir)) {
+                                    if (mkdir($uploaddir, 0755, true));
+                                }
+
+                                if(!is_dir($thumbDir)) {
+                                    if (mkdir($thumbDir, 0755, true));
+                                }
+
+                                if(!is_dir($dzthumbDir)) {
+                                    if (mkdir($dzthumbDir, 0755, true));
+                                }
+
+                                move_uploaded_file($tempFile, $uploadfile);
+                                $thumb=Yii::app()->phpThumb->create($uploadfile);
+                                $thumb->adaptiveResize(128,96);
+                                $thumb->save($thumbDir . $model->image);
+
+                                $thumb=Yii::app()->phpThumb->create($uploadfile);
+                                $thumb->adaptiveResize(120,120);
+                                $thumb->save($dzthumbDir . $model->image);
+
+                                $erroris = false;
+                                $imageID = $model->id;
+                            }
+                            else {
+                                $erroris = true;
+                                $etype = 'Try again';
+                            }
+                        }
+                        else {
+                            $erroris = true;
+                            $etype = 'Try again';
+                        }
+                    }
+                    else {
+                        $erroris = true;
+                        $etype = 'Image formats only: jpg, jpeg and png';
+                    }
+                }
+                else
+                {
+                    $erroris = true;
+                    $etype = 'Files  - if < 3Mb';
+                }
+            }
+            else {
+                $erroris = true;
+                $etype =  'You can upload only 5 photos';
+            }
+        }
+
+        $result = array(
+            'erroris' => $erroris,
+            'etype' => $etype,
+            'imageID'=>$imageID,
+            'imgArray'=>$imgArray,
+        );
+        echo json_encode($result);
+    }
+
+
+    public function actionPhotoremove(){
+        $id_img = $_GET['id_img'];
+        $model = AdImage::model()->findByPk($id_img);
+        $firstSequence = substr($model->image, 0,3);
+        $secondSequence = substr($model->image, 3,3);
+        $thirdSequence = substr($model->image, 6,3);
+        $uploaddir = Yii::getPathOfAlias('webroot').'/images/f/'.$firstSequence.'/'.$secondSequence.'/'.$thirdSequence.'/';
+        $thumbDir = Yii::getPathOfAlias('webroot').'/images/bigthumbs/'.$firstSequence.'/'.$secondSequence.'/'.$thirdSequence.'/';
+        $dzthumbDir = Yii::getPathOfAlias('webroot').'/images/dzthumbs/'.$firstSequence.'/'.$secondSequence.'/'.$thirdSequence.'/';
+        if ($model->delete())
+        {
+            unlink($uploaddir.$model->image);
+            unlink($thumbDir.$model->image);
+            unlink($dzthumbDir.$model->image);
+        }
+    }
+
+    public function actionGetCarModel($brandId){
+        $carBrand = FilterCarBrand::model()->find('orderID=:orderID',array(':orderID'=>$brandId));
+        $carModels = FilterCarModel::model()->findAll(array('order'=>'orderID ASC','condition'=>'carBrandID=:carBrandID','params'=>array(':carBrandID'=>$carBrand->id)));
+        $data=CHtml::listData($carModels,'orderID','name_cn');
+        echo '<option value="" selected="selected">Choose model</option>';
+        foreach($data as $value=>$name)
+        {
+            echo CHtml::tag('option',
+                array('value'=>$value),CHtml::encode($name),true);
+        }
+    }
+
+    /*function reArrayFiles(&$file_post) {
+
+        $file_ary = array();
+        $file_count = count($file_post['name']);
+        $file_keys = array_keys($file_post);
+
+        for ($i=0; $i<$file_count; $i++) {
+            foreach ($file_keys as $key) {
+                $file_ary[$i][$key] = $file_post[$key][$i];
+            }
+        }
+
+        return $file_ary;
+    }*/
+
+    public function actionShowadimages($urlID){
+
+        $imgArray = array();
+        $ad = Ad::model()->find('urlID=:urlID',array(':urlID'=>$urlID));
+        $images = AdImage::model()->findAll('adID=:adID', array(':adID' => $ad->id));
+        $i=0;
+        foreach ($images as $image)
+        {
+            $imgArray[$image -> id] = $image -> image;
+            $i++;
+        }
+        $result[] = array(
+            'imgArray'=>$imgArray,
+        );
+        echo json_encode($result);
+    }
+
+
+
+
+    public function viewAdGetFields($ad){
+        $searchForm = new SearchForm();
+        $searchForm->ca = $ad->categoryID;
+        $searchForm->st = $ad->subtypeID;
+        $searchForm->type = SearchForm::VIEW_AD;
+        $searchForm->stepParam = SearchForm::GET_FIELDS;
+        $this->renderPartial('/fields/_fields', array('searchForm'=>$searchForm,'ad'=>$ad));
+    }
+
+    public function editAdGetSubtypes($ad){
+        $searchForm = new SearchForm();
+        $searchForm->ca = $ad->categoryID;
+        $searchForm->st = $ad->subtypeID;
+        $searchForm->type = SearchForm::EDIT_AD;
+        $searchForm->stepParam = SearchForm::GET_SUBTYPE;
+        $this->renderPartial('/fields/_fields', array('searchForm'=>$searchForm));
+    }
+
+    public function editAdGetFields($ad){
+        $searchForm = new SearchForm();
+        $searchForm->ca = $ad->categoryID;
+        $searchForm->st = $ad->subtypeID;
+        $searchForm->type = SearchForm::EDIT_AD;
+        $searchForm->stepParam = SearchForm::GET_FIELDS;
+        $this->renderPartial('/fields/_fields', array('searchForm'=>$searchForm,'ad'=>$ad));
+    }
+
+    public function actionUser($id)
+    {
+        $user=User::model()->find('urlID=:urlID',array(':urlID'=>$id));
+        $criteria = new CDbCriteria;
+        $criteria->condition = "userID=:userID";
+        $criteria->order= 't.id DESC';
+        $criteria->params = array(':userID'=>$user->id);
+        $ads =  new CActiveDataProvider('Ad', array(
+            'criteria' => $criteria,
+            'pagination' => array(
+                'pageSize' => 10,
+            ),
+        ));
+        $this->render('ads',array(
+            'ads'=>$ads
+        ));
+    }
+
+
+
+
+
+
+    public function photoremove($ad){
+
+        $photos = AdImage::model()->findAll('adID=:adID',array(':adID'=>$ad->id));
+        foreach ($photos as $model)
+        {   echo $model->id;
+            $firstSequence = substr($model->image, 0,3);
+            $secondSequence = substr($model->image, 3,3);
+            $thirdSequence = substr($model->image, 6,3);
+            $uploaddir = Yii::getPathOfAlias('webroot').'/images/f/'.$firstSequence.'/'.$secondSequence.'/'.$thirdSequence.'/';
+            $thumbDir = Yii::getPathOfAlias('webroot').'/images/bigthumbs/'.$firstSequence.'/'.$secondSequence.'/'.$thirdSequence.'/';
+            $dzthumbDir = Yii::getPathOfAlias('webroot').'/images/dzthumbs/'.$firstSequence.'/'.$secondSequence.'/'.$thirdSequence.'/';
+            if ($model->delete())
+            {
+                unlink($uploaddir.$model->image);
+                unlink($thumbDir.$model->image);
+                unlink($dzthumbDir.$model->image);
+            }
+       }
+    }
+
+    public function actionFavorite($id){
+        $ad = Ad::model()->find('urlID=:urlID',array(':urlID'=>$id));
+        $favorite = new Favorite();
+        $favorite->adID = $ad->id;
+        $favorite->userID = Yii::app()->user->id;
+        if ($favorite->save())
+            echo $ad->urlID;
+    }
+
+}

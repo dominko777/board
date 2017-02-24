@@ -1,0 +1,17 @@
+<div class="navigation">
+    <a  href="<?php echo Yii::app()->homeUrl;  ?>">Home</a>
+    <?php if ($category && ($category!=0))echo '&gt;'; ?>
+    <h1>
+        <?php if ($category && ($category!=0)): ?>
+        <a  href="<?php echo Yii::app()->createUrl('site/search',array('st'=>$st, 'ca'=>$category->orderID)); ?>">
+            <?php echo $category->name_cn;;   ?>
+        </a>
+        <?php endif;
+        if ($city): ?>
+        &gt;
+        <a  href="<?php echo Yii::app()->createUrl('site/search',array('st'=>$st, 'c'=>$city->orderID)); ?>">
+            <?php echo $city->name_cn; ?>
+        </a>
+        <?php endif; ?>
+    </h1>
+</div>

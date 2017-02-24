@@ -1,0 +1,42 @@
+<?php
+return array(
+    'Inbox'=>'Чаты',
+    'Archived Chats'=>'Архив',
+    'Archive'=>'Архивировать чат',
+    'Move to inbox'=>'В чаты',
+    'Delete Chat'=>'Удалить чат',
+    'Delete'=>'Удалить',
+    'Your offer (in grn)'=>'Ваше предложение в грн.',
+    'Make Offer'=>'Сделать предложение',
+    'About the seller'=>'О продавце',
+    'About the buyer'=>'О покупателе',
+    'Report User'=>'Предупредить',
+    'Block User'=>'Заблокировать',
+    'Unblock User'=>'Разблокировать',  
+    'Send'=>'Отправить',
+    'All'=>'Все',
+    'Messages'=>'сообщения',
+    'Buying'=>'Покупка',
+    'Selling'=>'Продажа',
+    'grn.'=>'грн.',
+    'Chat'=>'Чат',
+    'Buyers offer is'=>'Предложение покупателя - ',
+    'Your offer is'=>'Ваше предложение - ',
+    'Search'=>'Поиск', 
+
+
+    'Buyer blocked you. You cant write messages.'=>'Покупатель заблокировал Ваши сообщения',
+    'Seller blocked you. You cant write messages.'=>'Продавец заблокировал Ваши сообщения',
+    'Dont message me if your not interested in buying or selling them. Please. Thank you. Have a great day.'=>'Не пишите мне, если Вы не заинтересованы в покупке или продаже. Спасибо. Удачного дня.',
+    'I offered you'=>'Я предлагаю Вам',
+    'Chats was successfully deleted'=>'Чаты были успешно удалены',
+    'Chats was successfully archived'=>'Чаты были успешно заархивированы',
+    'Chats was successfully moved to inbox'=>'Чаты были успешно восстановлены',
+    'User was successfully blocked'=>'Пользователь заблокирован Вами',
+    'User was successfully unblocked'=>'Пользователь разблокирован Вами',
+    'Chat was successfully deleted'=>'Чат был успешно удален',
+    'Chat was successfully archived'=>'Чат был успешно заархивирован', 
+    'Chat was successfully moved to inbox'=>'Чат был успешно восстановлен',
+    'You have not made an offer on this item yet'=>'Вы еще не сделали предложения'
+    );
+

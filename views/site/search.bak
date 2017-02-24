@@ -1,0 +1,278 @@
+<link rel="stylesheet" type="text/css" href="<?php echo Yii::app()->request->baseUrl; ?>/css/listing.min.css" media="screen" />
+<div id="content">
+<div id="content">
+    <?php
+    if (strpos($searchForm->ca,'m') == false)
+        $getCategory = Categories::model()->find('orderID=:orderID',array(':orderID'=>$searchForm->ca));
+    $this->widget('ext.Breadcrumbs.Breadcrumbs',array('st'=>$searchForm->st, 'category'=>$getCategory, 'city'=>City::model()->find('orderID=:orderID',array(':orderID'=>$searchForm->c)))); ?>
+
+<?php $form=$this->beginWidget('CActiveForm', array(
+                'id'=>'search-form',
+                'enableClientValidation'=>false,
+                'method'=>'GET',
+                'action' => Yii::app()->createUrl('search'),
+                'clientOptions'=>array(
+                    'validateOnSubmit'=>true,
+                ),
+ )); ?>
+
+
+<div id="searchbox">
+
+
+
+<div class="mainfields">
+
+
+  <div class="query">
+    <label for="q">What you search?</label> 
+    <span role="status" aria-live="polite" class="ui-helper-hidden-accessible"></span><input autocomplete="off" placeholder="Vespa, iPhone 5, Bilocale" value="<?php echo $searchForm->q; ?>" id="searchtext" name="q" class="ui-autocomplete-input">
+  <ul class="ui-autocomplete ui-front ui-menu ui-widget ui-widget-content ui-corner-all" id="ui-id-1" tabindex="0" style="display: none;"></ul></div>
+  <div>
+    <label for="categoryBlock">In what category?</label>
+    <div id="categoryBlock" class="search_menu search_category">
+        <?php  ?>
+    <select name="ca">
+        <option value="0" selected="selected">All categories</option>
+             <?php
+            foreach ($main_categories as $main_category):
+                if ($mainCategoryActive == $main_category->orderID) { ?>
+            <option selected="selected"  value="m<?php echo $main_category->orderID; ?>">- <?php echo $main_category->name_cn; ?> -</option>
+                  <?php } else { ?>
+            <option value="m<?php echo $main_category->orderID; ?>">- <?php echo $main_category->name_cn; ?> -</option>
+                  <?php  } ?>
+            <?php foreach ($main_category->categoriesOrder as $category){ ?>
+                <option <?php if ($searchForm->ca == $category->orderID) echo 'selected="selected"'; ?> value="<?php echo $category->orderID; ?>"><?php echo $category->name_cn; ?></option>
+            <?php } ?> 
+            <?php endforeach; ?> 
+
+    </select>
+    </div>
+  </div>
+  <div>
+    <label for="c">City?</label> 
+    <div class="search_menu">
+        <?php echo $form->dropDownList($searchForm, 'c',  CHtml::listData($cities, 'orderID', 'name_cn'), array('name'=>'c','prompt'=>'All cities')); ?>
+    </div>
+  </div>
+
+  <div class="searchbutton">
+    <input type="submit" value="Search"  class="btnGreen">
+  </div>
+</div>
+    <div id="features_search">
+       <?php
+       if ($searchForm->st && !$searchForm->ca)
+            $this->renderPartial('/fields/_subtypes', array('searchForm'=>$searchForm));
+       else {
+           $searchForm->stepParam = SearchForm::GET_SUBTYPE_AND_FIELDS;
+           $searchForm->type = SearchForm::SEARCH;
+           $this->renderPartial('/fields/_fields', array('searchForm'=>$searchForm));
+       }
+       ?>
+    </div>
+ <?php $this->endWidget(); ?>
+</div>
+</div>
+ <?php   Yii::app()->clientScript->registerScript('searchscript',"
+        $('#search-form').submit(function() {
+        var inputs = $('#search-form :input');
+        inputs.each(function() {
+            valueForm = $(this).val();
+            if (valueForm == '')
+                $(this).prop('disabled', true);
+        });
+        });
+
+        function select_color(color){
+            var valueColor = color.id;
+            var arr = valueColor.split('_');
+            var colorId = arr[1];
+            $('input[name=\"clr\"]').val(colorId);
+            $('a[id^=\"color\"]').each(function() {
+                 $(this).removeClass('selected');
+            }),
+            $(color).addClass('selected');
+        }
+
+
+        $('#toggle_advanced_search').on('click', function(e) {
+        $('#advanced_filters').toggle();
+        $(this).toggleClass('toggle_advanced_search toggle_advanced_search_close');
+        return false; 
+        });
+
+        $('#cb').on('change',function(e) {
+            var brandId = $('#cb option:selected').val();
+            var url = '".Yii::app()->createurl('ad/getCarModel')."';
+            $.ajax({
+                url: url,
+                method: 'GET',
+                data: 'brandId='+brandId,
+                success: function(response)
+                {
+                    $('#cm').empty().append(response);
+                }
+            });
+        })
+
+    ",CClientScript::POS_READY);
+?>
+
+
+
+<!------------------------ Main List--------------------------->
+<div class="subcontent">
+<div class="main">
+
+
+
+
+
+
+
+
+
+
+
+<div class="listing">
+
+<div class="open">
+
+
+    <ul>
+
+        <li id="pagination_results" class="active"><b>Found <?php echo $ads->itemCount; ?> from <?php echo $ads->totalItemCount; ?></b> <span>|</span></li>
+        <?php if (!$searchForm->f) {   ?>
+        <li><a href="<?php echo  Yii::app()->getBaseUrl(true).Yii::app()->request->url.'&f=p' ?>">Private</a><span>|</span></li>
+
+        <li>
+            <a href="<?php echo  Yii::app()->getBaseUrl(true).Yii::app()->request->url.'&f=c' ?>" >
+                Company
+            </a>
+        </li>
+        <?php }
+        else {
+        ?>
+        <li>
+                <?php
+                $curUrl = Yii::app()->getBaseUrl(true).Yii::app()->request->url;
+                $pos = strpos($curUrl, '&f=');
+                $allPropertyUrl1 = substr($curUrl , 0, $pos);
+                $allPropertyUrl2 = substr($curUrl , $pos+4, strlen($curUrl));
+                ?>
+                <a  href="<?php echo  $allPropertyUrl1.$allPropertyUrl2; ?>" >
+                    All
+                </a>
+               <span>|</span>
+        </li>
+        <li><span style="display: block; float: left; height: 19px; padding: 2px 0 0; text-align: center;"><?php if ($searchForm->f=='p') echo 'Private'; else echo 'Company';  ?></span></li>
+        <?php } ?>
+    </ul>
+
+
+
+
+</div>
+<!-- Linkshelf section -->
+
+
+<!-- Linkshelf section end -->
+
+
+
+
+<ul class="newList">
+<?php
+$tI = 0;
+foreach ($topAds as $topAd):
+    if ($tI<3) $this->renderPartial('_top_item', array('data'=>$topAd));
+    $tI++;
+endforeach; ?>
+
+<?php
+$today = date('Y-m-d');
+$this->widget('zii.widgets.CListView', array(
+    'viewData' => array('today_date' => $today),
+    'dataProvider'=>$ads,
+    'summaryText'=>'',
+    'emptyText' => '',
+    'itemView'=>'_search_item',
+    'pager' =>'CPager',
+    'ajaxUpdate'=>false,
+));
+?>
+
+</ul>
+
+
+
+
+
+
+<div style="padding:15px 0;" class="pagination">
+    <div>
+
+    </div>
+</div>
+
+
+</div>
+</div>
+<div class="coldx">
+    <section id="gallery">
+        <?php if (count($showcaseAds)>0): ?>
+        <header>
+            <mark>VIP-ads</mark>
+        </header>
+        <ul class="list">
+            <?php
+            $shI = 0;
+            foreach ($showcaseAds as $showcaseAd):
+            if ($shI<3) : ?>
+            <li class="ad">
+                <a rel="noindex, nofollow" href="<?php echo Yii::app()->createUrl('ad/view',array('id'=>$showcaseAd->urlID)); ?>">
+                    <figure>
+                        <?php
+
+                        $countIm = count($showcaseAd->images);
+                        if ($countIm>0)
+                            $src = AdImage::getDirPathThumbs($showcaseAd->images[$countIm-1]->image);
+                            else
+                            $src = "http://s.sbito.it/1201425894895/img2/nothumb.png"; ?>
+                        <img src="<?php echo $src; ?>">
+
+
+                        <span><?php echo $countIm; ?></span>
+                        <img src="http://s.sbito.it/1201425894895/img2/ico_photo.png" class="no_photo">
+                        <div class="photoCount"></div>
+
+                    </figure>
+                    <div class="description">
+                        <h2><?php echo $showcaseAd->name; ?></h2>
+                        <span class="price"></span>
+                    </div>
+                </a>
+            </li>
+            <?php
+            endif;
+            $tI++;
+endforeach; ?>
+        </ul>
+        <?php endif; ?>
+        <footer id="boxPromote">
+            <strong class="bgIcon">Do you want to place your ad in showcase?</strong>
+            <a href="/info/promuovi-annunci.htm" onmousedown="push_button(this)" onmouseup="release_button(this)" onclick="return xt_click(this, 'C', '', 'landing::all', 'N');">
+                <div class="btnGreen">HOW TO DO IT</div>
+            </a>
+
+        </footer>
+    </section>
+
+
+
+
+
+</div>
+</div>
+</div>

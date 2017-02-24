@@ -1,0 +1,402 @@
+<?php
+
+class SiteController extends Controller
+{
+	/**
+	 * Declares class-based actions.
+	 */
+    public function filters()
+    {
+        return array(
+            'accessControl', // perform access control for CRUD operations
+            'postOnly + delete', // we only allow deletion via POST request
+        );
+    }
+
+    /**
+     * Specifies the access control rules.
+     * This method is used by the 'accessControl' filter.
+     * @return array access control rules
+     */
+    public function accessRules()
+    {
+        return array(
+            array('allow', // allow admin user to perform 'admin' and 'delete' actions
+                'actions'=>array('index','error','search','login','help'),
+                'users'=>array('*'),
+            ),
+            array('allow', // allow admin user to perform 'admin' and 'delete' actions
+                'actions'=>array('newAdGetSubtypeField','newAdGetFields'),
+                'users'=>array('@'),
+            ),
+            array('deny',  // deny all users
+                'users'=>array('*'),
+            ),
+        );
+    }
+
+	/**
+	 * This is the main 'index' action that is invoked
+	 * when an action is not explicitly requested by users.
+	 */
+	public function actionIndex()
+	{
+		// renders the view file 'protected/views/site/_ad_form.php'
+		// using the main layout 'protected/views/layouts/main.php'
+		$this->render('index');
+	}
+
+    public function actionHelp()
+    {
+        // renders the view file 'protected/views/site/_ad_form.php'
+        // using the main layout 'protected/views/layouts/main.php'
+        $this->render('help');
+    }
+
+	/**
+	 * This is the action to handle external exceptions.
+	 */
+	public function actionError()
+	{
+		if($error=Yii::app()->errorHandler->error)
+		{
+			if(Yii::app()->request->isAjaxRequest)
+				echo $error['message'];
+			else
+				$this->render('error', $error);
+		}
+	}
+
+    public function actionSearch()
+	{
+        $searchForm = new SearchForm();
+
+        $categoryParam = Yii::app()->request->getParam('ca');
+        $searchTypeParam = Yii::app()->request->getParam('st'); 
+        $cityParam = Yii::app()->request->getParam('c');
+        $propertyParam = Yii::app()->request->getParam('f');
+
+
+
+        $cities = City::model()->findAll(array('order'=>'orderID ASC'));
+        $city_array = array();
+        foreach ($cities as $cityItem) 
+            array_push($city_array, $cityItem->orderID);
+        if (in_array($cityParam, $city_array))
+            $searchForm->c = $cityParam;
+ 
+        $category = Categories::model()->find('orderID=:orderID',array(':orderID'=>$categoryParam));
+        if(!empty($category->orderID))
+        {
+            $searchForm->ca = $category->orderID;
+        }
+
+        $main_categories=Main_categories::model()->with('categoriesOrder')->findAll(array('order'=>'t.orderID ASC'));
+        $mainCategoryActive = 0;
+        if ($categoryParam[0] == "m") 
+            $mainCategoryActive = substr($categoryParam, 1);
+
+
+
+
+        $search_params = array();
+        $carBrandParam = Yii::app()->request->getParam('cb');
+        $carModelParam = Yii::app()->request->getParam('cm');
+        $vehiclePriceMinParam = Yii::app()->request->getParam('pm');
+        $vehiclePriceMaxParam = Yii::app()->request->getParam('pma');
+        $nameParam = Yii::app()->request->getParam('q');
+        $criteria = new CDbCriteria;
+
+
+        $criteria->select = 't.*, cat.name_cn AS categoryName, city.name_cn AS cityName, subtype.name_cn AS subtypeName';
+        $criteria->join = 'LEFT JOIN 534q_categories cat ON cat.orderID = t.categoryID ';
+        $criteria->join .= 'LEFT JOIN 534q_city city ON city.orderID = t.cityID ';
+        $criteria->join .= 'LEFT JOIN 534q_subtype subtype ON subtype.id = t.subtypeID ';
+
+
+        $criteria->with = array('images');
+        $criteria->order= 't.id DESC';
+
+        if($searchTypeParam)
+        {
+            $criteria->addCondition('t.subtypeID=:subtypeID');
+            $search_params[':subtypeID'] = $searchTypeParam;
+            $searchForm->st = $searchTypeParam;
+        }
+
+
+        if($nameParam)
+        {
+            $title = addcslashes($nameParam, '%_');
+            $criteria->addCondition('t.name LIKE :title');
+            $search_params[':title'] = "%$title%";
+            $searchForm->q = $nameParam;
+        }
+
+        if($categoryParam)
+        {
+            $criteria->addCondition('cat.orderID=:catOrderID');
+            $search_params[':catOrderID'] = $categoryParam;
+        }
+
+        if($cityParam)
+        {
+            $criteria->addCondition('city.orderID=:cityOrderID');
+            $search_params[':cityOrderID'] = $cityParam;
+        }
+
+        if($carBrandParam)
+        {
+            $criteria->addCondition('t.cb=:cb');
+            $search_params[':cb'] = $carBrandParam;
+            $searchForm->cb = $carBrandParam;
+        }
+
+        if($carModelParam)
+        {
+            $criteria->addCondition('t.cm=:cm');
+            $search_params[':cm'] = $carModelParam;
+            $searchForm->cm = $carModelParam;
+        }
+
+        if($propertyParam)
+        {
+            $criteria->addCondition('t.property=:propery');
+            if ($propertyParam == 'p')
+                $search_params[':propery'] = 1;
+            elseif($propertyParam == 'c')
+                $search_params[':propery'] = 2;
+            $searchForm->f = $propertyParam;
+        }
+
+        if($vehiclePriceMinParam && !$vehiclePriceMaxParam)
+        {
+            $criteria->addCondition('t.price >= :pmin');
+            $valueFilter = FilterVehiclePrice::model()->find('orderID=:orderID',array(':orderID'=>$vehiclePriceMinParam));
+            $valueFilter = preg_replace('/[^0-9\s]/', '', $valueFilter->name_cn);
+            $search_params[':pmin'] = $valueFilter;
+            $searchForm->pm = $vehiclePriceMinParam;
+        }
+
+        if($vehiclePriceMaxParam && !$vehiclePriceMinParam)
+        {
+            $criteria->addCondition('t.price <= :pmax');
+            $valueFilter = FilterVehiclePrice::model()->find('orderID=:orderID',array(':orderID'=>$vehiclePriceMaxParam));
+            $valueFilter = preg_replace('/[^0-9\s]/', '', $valueFilter->name_cn);
+            $search_params[':pmax'] = $valueFilter;
+            $searchForm->pma = $vehiclePriceMaxParam;
+        }
+
+        if($vehiclePriceMaxParam && $vehiclePriceMinParam)
+        {
+            $criteria->addCondition('t.price >= :pmin AND t.price <= :pmax');
+            $valueFilterMax = FilterVehiclePrice::model()->find('orderID=:orderID',array(':orderID'=>$vehiclePriceMaxParam));
+            $valueFilterMax = preg_replace('/[^0-9\s]/', '', $valueFilterMax->name_cn);
+            $valueFilterMin = FilterVehiclePrice::model()->find('orderID=:orderID',array(':orderID'=>$vehiclePriceMinParam));
+            $valueFilterMin = preg_replace('/[^0-9\s]/', '', $valueFilterMin->name_cn);
+            $search_params[':pmax'] = $valueFilterMax;
+            $search_params[':pmin'] = $valueFilterMin;
+            $searchForm->pma = $vehiclePriceMaxParam;
+            $searchForm->pm = $vehiclePriceMinParam;
+        }
+
+        $criteria->addCondition('t.moderation = :moderation');
+        $search_params[':moderation'] = 1;
+        $criteria->addCondition('t.published = :published');
+        $search_params[':published'] = 1;
+
+        $criteria->params = $search_params;
+
+
+        $ads =  new CActiveDataProvider('Ad', array(
+            'criteria' => $criteria,
+            'pagination' => array(
+                'pageSize' => 10,
+            ),
+        ));
+
+        if($categoryParam)
+        {
+            $tops = Top::model()->findAll('finishDate>:finishDate',array(':finishDate'=>date('Y-m-d  H:i:s')));
+            $top_array = array();
+            foreach ($tops as $top)
+                array_push($top_array, $top->adID);
+            $topCriteria = new CDbCriteria;
+            $topCriteria->condition = $criteria->condition;
+            $topCriteria->params = $search_params;
+            $topCriteria->join = $criteria->join;
+            $topCriteria->addInCondition('t.id', $top_array);
+            $topCriteria->order = 'RAND()';
+            $topAds = Ad::model()->with('images')->together()->findAll($topCriteria);
+
+
+
+            $showcases = Showcase::model()->findAll('finishDate>:finishDate',array(':finishDate'=>date('Y-m-d  H:i:s')));
+            $showcase_array = array();
+            foreach ($showcases as $showcase)
+                array_push($showcase_array, $showcase->adID);
+            $showcaseCriteria = new CDbCriteria;
+            $showcaseCriteria->condition = $criteria->condition;
+            $showcaseCriteria->params = $search_params;
+            $showcaseCriteria->join = $criteria->join;
+            $showcaseCriteria->addInCondition('t.id', $showcase_array);
+            $showcaseCriteria->order = 'RAND()';
+            $showcaseCriteria->limit = '3';
+            $showcaseAds = Ad::model()->with('images')->together()->findAll($showcaseCriteria);
+        }
+        else
+        {
+            $topAds = array();
+            $showcaseAds = array();
+        }
+
+
+		$this->render('search',
+            array(
+                 'searchForm'=>$searchForm,
+                 'cities'=>$cities,
+                 'categoryParam'=>$categoryParam,
+                 'main_categories'=>$main_categories, 
+                 'mainCategoryActive'=>$mainCategoryActive,
+                 'ads'=>$ads,
+                 'topAds'=>$topAds,
+                 'showcaseAds'=>$showcaseAds,
+            ));
+	}
+
+	/**
+	 * Displays the contact page
+	 */
+	public function actionContact()
+	{
+		$model=new ContactForm;
+		if(isset($_POST['ContactForm']))
+		{
+			$model->attributes=$_POST['ContactForm'];
+			if($model->validate())
+			{
+				$name='=?UTF-8?B?'.base64_encode($model->name).'?=';
+				$subject='=?UTF-8?B?'.base64_encode($model->subject).'?=';
+				$headers="From: $name <{$model->email}>\r\n".
+					"Reply-To: {$model->email}\r\n".
+					"MIME-Version: 1.0\r\n".
+					"Content-Type: text/plain; charset=UTF-8";
+
+				mail(Yii::app()->params['adminEmail'],$subject,$model->body,$headers);
+				Yii::app()->user->setFlash('contact','Thank you for contacting us. We will respond to you as soon as possible.');
+				$this->refresh();
+			}
+		}
+		$this->render('contact',array('model'=>$model));
+	}
+
+	/**
+	 * Displays the login page
+	 */
+	public function actionLogin()
+	{
+		$model=new LoginForm;
+
+		// if it is ajax validation request
+		if(isset($_POST['ajax']) && $_POST['ajax']==='login-form')
+		{
+			echo CActiveForm::validate($model);
+			Yii::app()->end();
+		}
+
+		// collect user input data
+		if(isset($_POST['LoginForm']))
+		{
+			$model->attributes=$_POST['LoginForm'];
+			// validate user input and redirect to the previous page if valid
+			if($model->validate() && $model->login())
+				$this->redirect(array('ad/user','id'=>Yii::app()->user->returnUrl));
+		}
+		// display the login form
+		$this->render('login',array('model'=>$model));
+	}
+
+
+
+    public function getOptions($filter, $filter_pair, $searchForm){
+         $catalogues = Catalogue::model()->findAll(array('order'=>'orderID ASC','condition'=>'filterID=:filterID','params'=>array(':filterID'=>$filter->id)));
+         switch ($filter->types->name_cn) {
+             case 'select': if (!empty($filter_pair))
+                                 switch ($filter_pair->ftype->name_cn) {
+                                     case 'maxmin': echo '<select  onchange="maxmin(\''.$filter_pair->filter_parent->abbr.'\',\''.$filter_pair->filter_child->abbr.'\');" id="'.$filter->abbr.'" name="'.$filter->abbr.'">'; break;
+                                     case 'dependable': echo '<select  onchange="dependable(\''.$filter_pair->filter_parent->abbr.'\',\''.$filter_pair->filter_child->abbr.'\');" id="'.$filter->abbr.'" name="'.$filter->abbr.'">'; break;
+                                  }
+                             else
+                                 echo '<select id="'.$filter->abbr.'" name="'.$filter->abbr.'">';
+
+                             $field = SearchForm::getField($searchForm, $filter->abbr);
+                             if($field) {
+                                 echo '<option  value="">'.$filter->prompt_cn.'</option>';
+                                 foreach ($catalogues as $catalogue):
+                                     if ($field == $catalogue->orderID)
+                                         echo  '<option selected="selected" value="'.$catalogue->orderID.'">'.$catalogue->name_cn.'</option>';
+                                     else
+                                         echo  '<option value="'.$catalogue->orderID.'">'.$catalogue->name_cn.'</option>';
+                                 endforeach;
+                             }
+                             else
+                             {
+                                 echo '<option selected="selected" value="">'.$filter->prompt_cn.'</option>';
+                                 foreach ($catalogues as $catalogue):
+                                                  echo  '<option value="'.$catalogue->orderID.'">'.$catalogue->name_cn.'</option>';
+                                 endforeach;
+                             }
+                             echo '</select>';
+                             break;
+             
+             case 'color':   echo '<div class="sb_advfield noborder colors">';
+                                      echo '<a class="sb_color Bianco " title="Bianco" onclick="return select_color(this)" id="color_1" href="#"><div></div></a>';
+                                      echo '<a class="sb_color Grigio " title="Grigio" onclick="return select_color(this)" id="color_2" href="#"><div></div></a>';
+                                      echo '<a class="sb_color Marrone " title="Marrone" onclick="return select_color(this)" id="color_3" href="#"><div></div></a>';
+                                      echo '<a class="sb_color Nero" title="Nero" onclick="return select_color(this)" id="color_4" href="#"><div></div></a>';
+                                      echo '<a class="sb_color Rosso " title="Rosso" onclick="return select_color(this)" id="color_5" href="#"><div></div></a>';
+                                      echo '<a class="sb_color Giallo " title="Giallo" onclick="return select_color(this)" id="color_6" href="#"><div></div></a>';
+                                      echo '<a class="sb_color Verde " title="Verde" onclick="return select_color(this)" id="color_7" href="#"><div></div></a>';
+                                      echo '<input type="hidden" value="" name="clr" id="clr">';
+                                echo '</div>';
+                             break; 
+         }
+    }
+
+    public function actionNewAdGetSubtypeField($catId){
+        $category = Categories::model()->find('orderID=:orderID',array(':orderID'=>$catId));
+        $searchForm = new SearchForm();
+        $searchForm->ca = $category->orderID;
+        $searchForm->st = Ad::SALE;
+        $searchForm->type = SearchForm::NEW_AD;
+        $searchForm->stepParam = SearchForm::GET_SUBTYPE;
+        $this->renderPartial('/fields/_fields', array('searchForm'=>$searchForm));
+    }
+
+    public function actionEditAdGetSubtypeField($catId){
+        $category = Categories::model()->find('orderID=:orderID',array(':orderID'=>$catId));
+        $searchForm = new SearchForm();
+        $searchForm->ca = $category->orderID;
+        $searchForm->st = Ad::SALE;
+        $searchForm->type = SearchForm::NEW_AD;
+        $searchForm->stepParam = SearchForm::GET_SUBTYPE;
+        $this->renderPartial('/fields/_fields', array('searchForm'=>$searchForm));
+    }
+
+    public function actionNewAdGetFields($catId, $subtypeId){
+        $category = Categories::model()->find('orderID=:orderID',array(':orderID'=>$catId));
+        $searchForm = new SearchForm();
+        $searchForm->ca = $category->orderID;
+        $searchForm->st = $subtypeId;
+        $searchForm->type = SearchForm::NEW_AD;
+        $searchForm->stepParam = SearchForm::GET_FIELDS;
+        $this->renderPartial('/fields/_fields', array('searchForm'=>$searchForm));
+    }
+
+
+
+
+
+
+
+}

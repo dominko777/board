@@ -1,0 +1,25 @@
+<?php
+/* @var $this CategoriesController */
+/* @var $data Categories */
+?>
+
+<div class="view">
+
+	<b><?php echo CHtml::encode($data->getAttributeLabel('id')); ?>:</b>
+	<?php echo CHtml::link(CHtml::encode($data->id), array('view', 'id'=>$data->id)); ?>
+	<br />
+
+	<b><?php echo CHtml::encode($data->getAttributeLabel('name_en')); ?>:</b>
+	<?php echo CHtml::encode($data->name_en); ?>
+	<br />
+
+	<b><?php echo CHtml::encode($data->getAttributeLabel('name_cn')); ?>:</b>
+	<?php echo CHtml::encode($data->name_cn); ?>
+	<br />
+
+	<b><?php echo CHtml::encode($data->getAttributeLabel('mainCategoryID')); ?>:</b>
+	<?php echo CHtml::encode($data->mainCategoryID); ?>
+	<br />
+
+
+</div>

@@ -1,0 +1,199 @@
+<?php
+
+/**
+ * This is the model class for table "534q_ad".
+ *
+ * The followings are the available columns in table '534q_ad':
+ * @property integer $id
+ * @property string $name
+ * @property string $date_time
+ * @property integer $moderation
+ * @property string $text
+ * @property string $phone
+ * @property integer $hidePhone
+ * @property integer $subtypeID
+ * @property integer $categoryID
+ * @property integer $cityID
+ * @property integer $cb
+ * @property integer $cm
+ * @property integer $pm
+ * @property integer $pma
+ * @property integer $rs
+ * @property integer $re
+ * @property integer $property
+ *
+ * The followings are the available model relations:
+ * @property 534qSubtype $subtype
+ */
+class Ad extends CActiveRecord
+{
+	/**
+	 * @return string the associated database table name
+	 */
+	public function tableName()
+	{
+		return '534q_ad';
+	}
+
+	/**
+	 * @return array validation rules for model attributes.
+	 */
+
+    public static $subtypesArray = array(Ad::SALE=>Ad::SALE_VALUE,Ad::WANTED=>Ad::WANTED_VALUE);
+    public static $subtypesRentArray = array(Ad::SALE=>Ad::SALE_VALUE,Ad::RENT=>Ad::RENT_VALUE,Ad::WANTED=>Ad::WANTED_VALUE);
+
+    const SALE=1;
+    const RENT=2;
+    const WANTED=3;
+    const SALE_VALUE='Sale';
+    const RENT_VALUE='Rent';
+    const WANTED_VALUE='Wanted';
+
+    public $categoryName;
+    public $cityName;
+    public $subtypeName;
+    public $userFio;
+    public $userEmail;
+    public $companyAdsCount;
+
+
+	public function rules()
+	{
+		// NOTE: you should only define rules for those attributes that
+		// will receive user inputs.
+		return array(
+			array('price, email, ownerName, name, date_time, moderation, text, phone, hidePhone, subtypeID, categoryID, cityID, property', 'required'),
+			array('price, moderation, hidePhone, subtypeID, categoryID, cityID, property', 'numerical', 'integerOnly'=>true),
+			array('name', 'length', 'max'=>150),
+			array('text', 'length', 'max'=>500),
+			array('phone', 'length', 'max'=>15),
+			array('categoryID', 'numerical', 'max'=>1000,'tooBig'=>'Choose category'),
+            array('email, ownerName', 'length', 'max'=>50),
+            array('email', 'email'),
+            array('cb, cm, pm, pma', 'safe'),
+			// The following rule is used by search().
+			// @todo Please remove those attributes that should not be searched.
+			array('id, name, date_time, moderation, text, phone, hidePhone, subtypeID, categoryID, cityID, cb, cm, pm, pma, rs, re, property', 'safe', 'on'=>'search'),
+		);
+	}
+
+	/**
+	 * @return array relational rules.
+	 */
+	public function relations()
+	{
+		// NOTE: you may need to adjust the relation name and the related
+		// class name for the relations automatically generated below.
+		return array(
+			'subtype' => array(self::BELONGS_TO, '534qSubtype', 'subtypeID'),
+			'city' => array(self::BELONGS_TO, 'City', 'cityID'),
+			'categories' => array(self::BELONGS_TO, 'Categories', 'categoryID'),
+			'mcategories' => array(self::BELONGS_TO, 'Main_categories', 'categoryID'),
+			'images' => array(self::HAS_MANY, 'AdImage', 'adID'),
+		);
+	}
+
+	/**
+	 * @return array customized attribute labels (name=>label)
+	 */
+	public function attributeLabels()
+	{
+		return array(
+			'id' => 'ID',
+			'name' => 'Name',
+			'date_time' => 'date_time',
+			'moderation' => 'Moderation',
+			'text' => 'Text',
+			'phone' => 'Phone',
+			'hidePhone' => 'Hide Phone',
+			'subtypeID' => 'Subtype',
+			'categoryID' => 'Category',
+			'cityID' => 'City',
+			'property' => 'Property',
+            'ownerName'=>'Owner_name',
+		);
+	}
+
+	/**
+	 * Retrieves a list of models based on the current search/filter conditions.
+	 *
+	 * Typical usecase:
+	 * - Initialize the model fields with values from filter form.
+	 * - Execute this method to get CActiveDataProvider instance which will filter
+	 * models according to data in model fields.
+	 * - Pass data provider to CGridView, CListView or any similar widget.
+	 *
+	 * @return CActiveDataProvider the data provider that can return the models
+	 * based on the search/filter conditions.
+	 */
+	public function search()
+	{
+		// @todo Please modify the following code to remove attributes that should not be searched.
+
+		$criteria=new CDbCriteria;
+
+		$criteria->compare('id',$this->id);
+		$criteria->compare('name',$this->name,true);
+		$criteria->compare('date_time',$this->date_time,true);
+		$criteria->compare('moderation',$this->moderation);
+		$criteria->compare('text',$this->text,true);
+		$criteria->compare('phone',$this->phone,true);
+		$criteria->compare('hidePhone',$this->hidePhone);
+		$criteria->compare('subtypeID',$this->subtypeID);
+		$criteria->compare('categoryID',$this->categoryID);
+		$criteria->compare('cityID',$this->cityID);
+		$criteria->compare('cb',$this->cb);
+		$criteria->compare('cm',$this->cm);
+		$criteria->compare('pm',$this->pm);
+		$criteria->compare('pma',$this->pma);
+		$criteria->compare('rs',$this->rs);
+		$criteria->compare('re',$this->re);
+		$criteria->compare('property',$this->property);
+
+		return new CActiveDataProvider($this, array(
+			'criteria'=>$criteria,
+		));
+	}
+
+	/**
+	 * Returns the static model of the specified AR class.
+	 * Please note that you should have this exact method in all your CActiveRecord descendants!
+	 * @param string $className active record class name.
+	 * @return Ad the static model class
+	 */
+	public static function model($className=__CLASS__)
+	{
+		return parent::model($className);
+	}
+
+    public function generateUrlID() {
+        do {
+            mt_srand();
+            $id = mt_rand(100000000, 999999999);
+            $results = $this->findAll('urlID=:urlID', array(':urlID'=>$id));
+            $count = count ( $results );
+        } while ($count > 0);
+        return $id;
+    }
+
+    protected function beforeSave()
+    {
+        if(parent::beforeSave())
+        {
+            if($this->isNewRecord)
+            {
+                $this->urlID = $this->generateUrlID();
+            }
+            return true;
+        }
+        else
+            return false;
+    }
+
+    public function getCategory(){
+      /*  if ($categoryID!=0)
+            return $this->categories->name_cn;
+        else
+            return $this->categories->name_cn;*/
+    }
+}

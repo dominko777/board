@@ -1,0 +1,8 @@
+<?php
+if ($ad->cb!=0) :
+    echo '<li><b>Car brand</b>'.FilterCarBrand::model()->find("orderID=:orderID",array(":orderID"=>$ad->cb))->name_cn.'</li>';
+endif;
+
+if ($ad->cm!=0) :
+    echo '<li><b>Car model</b>'.FilterCarModel::model()->find("orderID=:orderID",array(":orderID"=>$ad->cm))->name_cn.'</li>';
+endif;

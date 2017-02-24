@@ -1,0 +1,41 @@
+<?php
+return array(
+    'Login'=>'Login',
+    'Log out'=>'Log out',
+    'Register'=>'Register',
+    'Name is too small. 5 characters minimum'=>'Name is too small. 5 characters minimum',
+    'Minimum 6 characters'=>'Minimum 6 characters',
+    'Email'=>'Email777',
+    'Password'=>'Password',
+    'Repeat password'=>'Repeat password',
+    'Login'=>'Login',
+    'Phone'=>'Phone',
+    'last visit day'=>'last visit day',
+    'url ID'=>'url ID',
+    'register date'=>'register date',
+    'Registration'=>'Registration',
+    'register'=>'Register',
+
+    'Congratulations - You have successfuly registered. Check your email and follow link to activate your account.'=>'Congratulations - You have successfuly registered. Check your email and follow link to activate your account.',
+    'If you don\'t receive email, check folder Spam'=>'If you don\'t receive email, check folder Spam',
+    'If you have problems contact us via email'=>'If you have problems contact us via email',
+
+    'You have successfuly activated your account. Now you can login'=>'You have successfuly activated your account. Now you can login',
+    'Successful account activation on'=>'Successful account activation on',
+
+    'Remember me'=>'Remember me',
+    'Password'=>'Password',
+    'Wrong email or password'=>'Wrong email or password',
+    'Your account is not activated yet, please check your email.'=>'Your account is not activated yet, please check your email.',
+    'Forgot password?'=>'Forgot password?',
+    'Reset password'=>'Reset password',
+    'Resetting password'=>'Resetting password', 
+    'Change password'=>'Change password',
+    'There is no user registered with that email address.'=>'There is no user registered with that email address.',
+    'We will email you a link to reset your password. When you receive the email, click on the link to reset it on our site.'=>'We will email you a link to reset your password. When you receive the email, click on the link to reset it on our site.',
+    'This email may take a little while to arrive. If you don\'t see it shortly, check your Spam and Junk folders.'=>'This email may take a little while to arrive. If you don\'t see it shortly, check your Spam and Junk folders.',
+    'Resetting your Password'=>'Resetting your Password',
+    'Click on the link to reset it on our site'=>'Click on the link to reset it on our site',
+    'Your password has been reset successfully.'=>'Your password has been reset successfully.',
+);  
+ 
